@@ -37,15 +37,16 @@ class VLUEDataset(BaseDataset):
         max_samples=None,
         root="datasets",
         gdrive_url="https://drive.google.com/uc?id=1XFz1Vtz7MCBLn4_1QEojhFJ5Iw3eH3X4",
-        erda_base_url="https://sid.erda.dk",
+        erda_base_url="https://sid.erda.dk/share_redirect/hmoEs4a3oG/marvl-id_boxes36.h5",
         working_directory="hmoEs4a3oG",
         language_codes=["id", "sw", "ta", "tr", "zh"]
     ):
+        # https://sid.erda.dk/share_redirect/hmoEs4a3oG/marvl-id_boxes36.h5
         super().__init__("VLUE", split, max_samples)
         self.root = os.path.join(os.path.dirname(__file__), root)
         self.dataset_dir = os.path.join(self.root, "VLUE")
         self.dataset_file = os.path.join(self.dataset_dir, "finetune_gdrive.tar")
-        self.erda_file = os.path.join(self.dataset_dir, "finetune_erda.tar")
+        self.erda_file = os.path.join(self.dataset_dir, "finetune_erda.h5")
 
         self.gdrive_url = gdrive_url
         self.erda_base_url = erda_base_url
@@ -84,8 +85,11 @@ class VLUEDataset(BaseDataset):
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
                 print(f"Downloaded dataset to {self.erda_file}")
-                with tarfile.open(self.erda_file, 'r') as tar:
-                    tar.extractall(path=self.dataset_dir)
+
+                # Extract from h5py files
+                # with h5py.File(self.erda_file, "r") as f:
+                #     print("Keys in HDF5 file:", list(f.keys()))
+
                 print(f"Extracted dataset to {images_dir}")
                 os.remove(self.erda_file)
                 print(f"Removed {self.erda_file}")
@@ -99,29 +103,4 @@ class VLUEDataset(BaseDataset):
         pass
 
 
-
-# Custom Dataset for the VLUE dataset, which is a child class of the pytorch dataset
-from torch.utils.data import Dataset
-
-class VLUEDatasetTorch(Dataset):
-    """
-    PyTorch Dataset for the VLUE dataset
-    """
-    def __init__(self, data_list, format_sample_fn=None):
-        """
-        Args:
-            data_list: List of examples (raw or dict)
-            format_sample_fn: Callable for formatting raw example to model input dict
-        """
-        self.data = data_list
-        self.format_sample = format_sample_fn
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        example = self.data[idx]
-        if self.format_sample:
-            return self.format_sample(example)
-        return example
 
