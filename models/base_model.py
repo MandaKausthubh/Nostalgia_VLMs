@@ -189,6 +189,29 @@ class VisionBaseModel:
         state = torch.load(os.path.join(load_dir, "pytorch_model.bin"), map_location=self.device)
         self.model.load_state_dict(state, strict=False)
 
+
+    def unload_and_merge(self):
+        """
+        Merges LoRA/PEFT weights (if any) back into the original model,
+        removes adapter layers, and sets the model back to the merged state.
+        If not a PEFT model, does nothing.
+        """
+        if self.model is None:
+            warnings.warn("No model to unload and merge.")
+            return
+
+        # Only do this if PEFT is available and model is from get_peft_model
+        if HAVE_PEFT and hasattr(self.model, "merge_and_unload"):
+            try:
+                self.model = self.model.merge_and_unload()
+                # Optionally: print to confirm operation
+                print("Merged adapters (if present) back into the base model and removed PEFT layers.")
+            except Exception as e:
+                warnings.warn(f"Failed to merge/unload PEFT adapters: {e}")
+        else:
+            warnings.warn("Model is not a PEFT-wrapped model or PEFT is not installed; nothing to merge.")
+
+
     # -------- Training / Evaluation --------
     def fit(
         self,
